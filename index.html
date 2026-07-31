@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="WorkBuddy">
+  <meta name="theme-color" content="#F0F4F8">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23E67E22'/%3E%3Cstop offset='100%25' stop-color='%232E86C1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3EW%3C/text%3E%3C/svg%3E">
+  <title>WorkBuddy 工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif; letter-spacing: 0.02em; }
+    body { background: #F0F4F8; margin: 0; min-height: 100vh; overflow: hidden; }
+    /* ── 佈局容器：防止整體溢出 ── */
+    .app-container { display: flex; width: 100%; height: 100vh; overflow: hidden; }
+    /* ── 左側導航欄：固定寬度，不壓縮 ── */
+    .sidebar { width: 220px; flex-shrink: 0; overflow-y: auto; background: #FFFFFF; border-right: 1px solid #F3F4F6; display: flex; flex-direction: column; box-shadow: 2px 0 12px rgba(0,0,0,0.04); }
+    /* ── 右側主內容區：彈性撐滿，防止溢出 ── */
+    .main-content { flex: 1 1 auto; min-width: 0; overflow-y: auto; overflow-x: hidden; word-wrap: break-word; overflow-wrap: break-word; }
+    .main-content-inner { padding: 24px 32px; min-width: 600px; }
+    .card { background: #FFFFFF; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 24px 28px; }
+    .btn-primary { background: #E67E22; color: white; border-radius: 8px; padding: 10px 24px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-primary:hover { background: #D35400; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(230,126,34,0.3); }
+    .btn-secondary { background: #2E86C1; color: white; border-radius: 8px; padding: 10px 24px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { background: #2471A3; transform: translateY(-1px); }
+    .btn-danger { background: #95A5A6; color: white; border-radius: 8px; padding: 8px 16px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+    .btn-danger:hover { background: #7F8C8D; }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    .nav-item { padding: 12px 20px; margin: 4px 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; color: #4A5568; display: flex; align-items: center; gap: 10px; }
+    .nav-item:hover { background: rgba(46,134,193,0.08); color: #2E86C1; }
+    .nav-item.active { background: rgba(46,134,193,0.12); color: #2E86C1; font-weight: 600; }
+    .banner { background: linear-gradient(135deg, #FDEBD0 0%, #FCF3CF 100%); border-radius: 16px; padding: 28px 32px; margin-bottom: 24px; }
+    .input-field { width: 100%; padding: 10px 14px; border: 1.5px solid #E2E8F0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; outline: none; background: #F8FAFC; box-sizing: border-box; }
+    .input-field:focus { border-color: #2E86C1; background: white; box-shadow: 0 0 0 3px rgba(46,134,193,0.1); }
+    select.input-field { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%234A5568' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    .timeline-item { position: relative; padding-left: 28px; padding-bottom: 20px; border-left: 2px solid #E2E8F0; }
+    .timeline-item:last-child { border-left-color: transparent; }
+    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #2E86C1; }
+    .mood-btn { font-size: 36px; padding: 12px 18px; border-radius: 12px; border: 2px solid #E2E8F0; background: white; cursor: pointer; transition: all 0.2s; }
+    .mood-btn:hover { border-color: #2E86C1; transform: scale(1.1); }
+    .mood-btn.selected { border-color: #2E86C1; background: rgba(46,134,193,0.08); }
+    .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .tag-yt { background: #FFEBEE; color: #C62828; }
+    .tag-dy { background: #E3F2FD; color: #1565C0; }
+    .tag-bili { background: #FFF3E0; color: #E65100; }
+    .tag-xhs { background: #FCE4EC; color: #AD1457; }
+    .tag-ig { background: #F3E5F5; color: #7B1FA2; }
+    .progress-bar { height: 6px; border-radius: 3px; background: #E2E8F0; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #2E86C1, #E67E22); transition: width 0.5s ease; }
+    .emoji-large { font-size: 64px; }
+    .stats-num { font-size: 28px; font-weight: 700; color: #1E2A3A; }
+    .stats-label { font-size: 13px; color: #718096; }
+    .meal-card { background: #FAFBFC; border-radius: 12px; padding: 16px 20px; border: 1px solid #EDF2F7; }
+    .media-card { background: white; border-radius: 12px; border: 1px solid #EDF2F7; overflow: hidden; transition: all 0.2s; }
+    .media-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .badge-gold { background: #FFF8E1; color: #F57F17; }
+    .badge-silver { background: #ECEFF1; color: #546E7A; }
+    .badge-bronze { background: #FFF3E0; color: #E65100; }
+    .checkbox-custom { width: 20px; height: 20px; border-radius: 4px; border: 2px solid #CBD5E0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .checkbox-custom.checked { background: #E67E22; border-color: #E67E22; }
+    .checkbox-custom.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+    .empty-state { text-align: center; padding: 40px 20px; color: #A0AEC0; }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .toggle-switch { width: 48px; height: 26px; background: #CBD5E0; border-radius: 13px; cursor: pointer; position: relative; transition: background 0.3s; }
+    .toggle-switch.active { background: #E67E22; }
+    .toggle-switch::after { content: ''; position: absolute; width: 22px; height: 22px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .toggle-switch.active::after { left: 24px; }
+    .sop-card { background: #FAFBFC; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; border-left: 3px solid #2E86C1; }
+    .quote-card { background: linear-gradient(135deg, #EBF5FB 0%, #FDF2E9 100%); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+    .avatar-placeholder { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #E67E22, #2E86C1); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 700; flex-shrink: 0; }
+    .fill-blank { display: inline-block; min-width: 80px; border-bottom: 2px dashed #CBD5E0; text-align: center; padding: 2px 8px; margin: 0 4px; cursor: pointer; transition: all 0.2s; color: #CBD5E0; font-weight: 500; }
+    .fill-blank.revealed { color: #2E86C1; border-color: #2E86C1; font-weight: 600; }
+    .day-streak { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; background: #FFF3E0; color: #E67E22; font-weight: 600; font-size: 14px; }
+    .section-title { font-size: 20px; font-weight: 700; color: #1E2A3A; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .subtitle { font-size: 14px; color: #718096; margin-top: 4px; }
+    .filter-btn { padding: 6px 16px; border-radius: 20px; font-size: 13px; border: 1.5px solid #E2E8F0; background: white; cursor: pointer; transition: all 0.2s; color: #4A5568; }
+    .filter-btn.active { background: #2E86C1; color: white; border-color: #2E86C1; }
+    .insight-box { background: #FFF8E1; border-radius: 10px; padding: 12px 16px; border-left: 3px solid #E67E22; margin-top: 8px; font-size: 13px; }
+    .flow-box { background: #E8F5E9; border-radius: 10px; padding: 12px 16px; border-left: 3px solid #43A047; margin-top: 8px; font-size: 13px; }
+    /* ── 響應式：平板 (≤1280px) ── */
+    @media (max-width: 1280px) {
+      .sidebar { width: 200px; }
+      .main-content-inner { padding: 20px 24px; min-width: 480px; }
+      .nav-item { padding: 10px 16px; margin: 2px 8px; font-size: 14px; }
+      .banner { padding: 22px 24px; }
+      .banner .text-2xl { font-size: 1.35rem !important; }
+    }
+    /* ── 響應式：小螢幕 (≤900px) ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 180px; }
+      .main-content-inner { padding: 16px 16px; min-width: 360px; }
+      .card { padding: 16px 18px; }
+      .nav-item { padding: 8px 12px; margin: 2px 6px; font-size: 13px; }
+      .banner { padding: 18px 20px; }
+      .banner .text-2xl { font-size: 1.2rem !important; }
+      .stats-num { font-size: 22px; }
+      .section-title { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="px-5 py-6 border-b border-gray-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-extrabold text-lg" style="background: linear-gradient(135deg, #E67E22, #2E86C1);">W</div>
+            <span class="font-bold text-lg text-gray-800">WorkBuddy</span>
+          </div>
+        </div>
+        <nav class="flex-1 py-4 overflow-y-auto">
+          <div v-for="(item, idx) in navItems" :key="idx"
+               :class="['nav-item', { active: currentPage === item.id }]"
+               @click="switchPage(item.id)">
+            <span class="text-lg">{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </div>
+        </nav>
+        <div class="px-5 py-4 border-t border-gray-100 text-xs text-gray-400">
+          WorkBuddy v1.0
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="main-content-inner">
+          <!-- Banner -->
+          <div class="banner">
+            <div class="text-2xl font-extrabold text-gray-800">「擁有執行力的自己，就是最優秀的自己，最接近成功的自己。」</div>
+            <div class="subtitle mt-2" style="font-size:15px; color:#5A6D80;">{{ currentSubtitle }}</div>
+          </div>
+
+          <!-- Page Content with transition -->
+          <transition name="fade">
+            <div :key="currentPage">
+              <!-- Home Page -->
+              <div v-if="currentPage === 'home'">
+                <div class="card">
+                  <div class="section-title"><span>🌟</span> 每日激勵</div>
+                  <div class="quote-card">
+                    <div class="avatar-placeholder">{{ todayQuote.avatar }}</div>
+                    <div>
+                      <div class="font-semibold text-gray-800">{{ todayQuote.name }} <span class="text-gray-400 font-normal text-sm ml-2">{{ todayQuote.era }}</span></div>
+                      <div class="text-gray-600 mt-1 text-sm leading-relaxed">{{ todayQuote.quote }}</div>
+                    </div>
+                  </div>
+                  <div class="text-center mt-4 text-sm text-gray-400">今日已激勵 {{ inspiredCount }} 位使用者</div>
+                </div>
+              </div>
+
+              <!-- About Me Page -->
+              <div v-if="currentPage === 'about'">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                  <div class="card text-center">
+                    <div class="stats-num">{{ monthlyEventCount }}</div>
+                    <div class="stats-label">本月重要事件數</div>
+                  </div>
+                  <div class="card text-center">
+                    <div class="stats-num">{{ weeklyMoodRatio }}%</div>
+                    <div class="stats-label">本週開心佔比</div>
+                  </div>
+                </div>
+
+                <!-- Add Event -->
+                <div class="card mb-6">
+                  <div class="section-title"><span>📝</span> 新增重要事件</div>
+                  <div class="grid grid-cols-4 gap-3 mb-3">
+                    <input type="date" v-model="newEvent.date" class="input-field">
+                    <input type="text" v-model="newEvent.title" placeholder="事件標題" class="input-field col-span-2">
+                    <button @click="addEvent" class="btn-primary btn-sm">新增事件</button>
+                  </div>
+                  <input type="text" v-model="newEvent.note" placeholder="備註（選填）" class="input-field">
+                </div>
+
+                <!-- Timeline -->
+                <div class="card mb-6" v-if="events.length > 0">
+                  <div class="section-title"><span>📅</span> 時間軸</div>
+                  <div v-for="(ev, i) in sortedEvents" :key="i" class="timeline-item">
+                    <div v-if="editingEventId === i" class="space-y-2">
+                      <input type="date" v-model="editEvent.date" class="input-field">
+                      <input type="text" v-model="editEvent.title" placeholder="事件標題" class="input-field">
+                      <input type="text" v-model="editEvent.note" placeholder="備註" class="input-field">
+                      <div class="flex gap-2">
+                        <button @click="saveEditEvent(i)" class="btn-primary btn-sm">儲存</button>
+                        <button @click="editingEventId = null" class="btn-danger btn-sm">取消</button>
+                      </div>
+                    </div>
+                    <div v-else>
+                      <div class="text-xs text-gray-400">{{ ev.date }}</div>
+                      <div class="font-semibold text-gray-700 mt-1">{{ ev.title }}</div>
+                      <div class="text-sm text-gray-500 mt-1" v-if="ev.note">{{ ev.note }}</div>
+                      <div class="flex gap-2 mt-2">
+                        <button @click="startEditEvent(i, ev)" class="text-xs text-blue-500 hover:underline">編輯</button>
+                        <button @click="deleteEvent(i)" class="text-xs text-red-400 hover:underline">刪除</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card" v-else>
+                  <div class="empty-state">
+                    <div class="icon">📋</div>
+                    <div>還沒有重要事件紀錄，快來新增第一筆吧！</div>
+                  </div>
+                </div>
+
+                <!-- Mood -->
+                <div class="card mb-6">
+                  <div class="section-title"><span>😊</span> 今日心情</div>
+                  <div class="flex gap-4 justify-center mb-4">
+                    <button v-for="m in moods" :key="m.emoji"
+                            :class="['mood-btn', { selected: todayMood === m.emoji }]"
+                            @click="setMood(m.emoji)"
+                            :title="m.label">{{ m.emoji }}</button>
+                  </div>
+                  <textarea v-model="moodDiary" placeholder="寫下今天的心情（50字內）" maxlength="50" class="input-field" rows="2" style="resize:none;"></textarea>
+                  <button @click="saveMood" class="btn-primary mt-3 btn-sm">記錄心情</button>
+                </div>
+
+                <!-- Weekly Mood Chart -->
+                <div class="card" v-if="weeklyMoodData.length > 0">
+                  <div class="section-title"><span>📊</span> 本週情緒趨勢</div>
+                  <canvas id="moodChart" height="80"></canvas>
+                </div>
+              </div>
+
+              <!-- Accounting Page -->
+              <div v-if="currentPage === 'accounting'">
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                  <div class="card text-center">
+                    <div class="stats-num" style="color:#43A047;">NT$ {{ formatNum(totalIncome) }}</div>
+                    <div class="stats-label">本月總收入</div>
+                  </div>
+                  <div class="card text-center">
+                    <div class="stats-num" style="color:#E53935;">NT$ {{ formatNum(totalExpense) }}</div>
+                    <div class="stats-label">本月總支出</div>
+                  </div>
+                  <div class="card text-center">
+                    <div class="stats-num" :style="{color: balance >= 0 ? '#2E86C1' : '#E53935'}">NT$ {{ formatNum(balance) }}</div>
+                    <div class="stats-label">本月結餘</div>
+                  </div>
+                </div>
+
+                <!-- Add Record -->
+                <div class="card mb-6">
+                  <div class="section-title"><span>💳</span> 新增記帳</div>
+                  <div class="grid grid-cols-5 gap-3 mb-3">
+                    <input type="date" v-model="newRecord.date" class="input-field">
+                    <select v-model="newRecord.category" class="input-field">
+                      <option value="income">💰 收入</option>
+                      <option value="expense">💸 消費</option>
+                    </select>
+                    <input type="text" v-model="newRecord.item" placeholder="項目名稱 *" class="input-field" required>
+                    <input type="number" v-model="newRecord.amount" placeholder="金額 *" class="input-field" min="0" required>
+                    <button @click="addRecord" class="btn-primary btn-sm">新增</button>
+                  </div>
+                  <input type="text" v-model="newRecord.note" placeholder="備註（選填）" class="input-field">
+                </div>
+
+                <!-- Records -->
+                <div class="card mb-6" v-if="records.length > 0">
+                  <div class="section-title"><span>📋</span> 記帳紀錄</div>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead>
+                        <tr class="text-left text-gray-500 border-b">
+                          <th class="pb-3">日期</th><th class="pb-3">類別</th><th class="pb-3">項目</th><th class="pb-3">金額</th><th class="pb-3">備註</th><th class="pb-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(r, i) in sortedRecords" :key="i" class="border-b border-gray-50">
+                          <td class="py-2">{{ r.date }}</td>
+                          <td class="py-2">{{ r.category === 'income' ? '💰 收入' : '💸 消費' }}</td>
+                          <td class="py-2">{{ r.item }}</td>
+                          <td class="py-2" :style="{color: r.category === 'income' ? '#43A047' : '#E53935'}">NT$ {{ formatNum(r.amount) }}</td>
+                          <td class="py-2 text-gray-400">{{ r.note || '-' }}</td>
+                          <td class="py-2">
+                            <button @click="deleteRecord(i)" class="text-red-400 text-xs hover:underline">刪除</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card" v-else>
+                  <div class="empty-state">
+                    <div class="icon">💳</div>
+                    <div>今天還沒有記帳，新增一筆吧！</div>
+                  </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-2 gap-4" v-if="records.length > 0">
+                  <div class="card">
+                    <div class="font-semibold text-gray-700 mb-3">近 7 天消費趨勢</div>
+                    <canvas id="trendChart" height="150"></canvas>
+                  </div>
+                  <div class="card">
+                    <div class="font-semibold text-gray-700 mb-3">消費類別分佈</div>
+                    <canvas id="pieChart" height="150"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Financial Learning Page -->
+              <div v-if="currentPage === 'finance'">
+                <div class="card mb-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="section-title" style="margin-bottom:0;"><span>📊</span> 小白理財 15 分鐘</div>
+                    <div class="day-streak">📅 今日第 {{ financeDay }} 天 / 共 30 天</div>
+                  </div>
+                  <div class="progress-bar mb-4">
+                    <div class="progress-fill" :style="{width: (financeDay/30*100)+'%'}"></div>
+                  </div>
+                  <div class="text-xs text-gray-400 mb-4">進度 {{ Math.round(financeDay/30*100) }}%</div>
+                  <div class="bg-blue-50 rounded-xl p-6">
+                    <div class="text-lg font-bold text-gray-800 mb-2">{{ financeData[financeDay-1]?.title }}</div>
+                    <div class="text-sm text-gray-600 leading-relaxed">{{ financeData[financeDay-1]?.content }}</div>
+                  </div>
+                  <button class="btn-secondary btn-sm mt-4">更換主題包（敬請期待）</button>
+                </div>
+              </div>
+
+              <!-- Reading Page -->
+              <div v-if="currentPage === 'reading'">
+                <div class="card mb-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="section-title" style="margin-bottom:0;"><span>📖</span> 《思考，快與慢》</div>
+                    <div class="day-streak">📅 第 {{ readingDay }} 天 / 共 30 天</div>
+                  </div>
+                  <div class="progress-bar mb-4">
+                    <div class="progress-fill" :style="{width: (readingDay/30*100)+'%'}"></div>
+                  </div>
+                  <div v-for="(item, i) in todayReadingPoints" :key="i" class="bg-gray-50 rounded-xl p-5 mb-4">
+                    <div class="font-bold text-gray-800 text-lg mb-2">{{ item.concept }}</div>
+                    <div class="text-sm text-blue-600 font-medium mb-2">{{ item.definition }}</div>
+                    <div class="text-sm text-gray-600 leading-relaxed mb-3">{{ item.example }}</div>
+                    <div class="insight-box">
+                      <span class="font-semibold">💡 今日行動建議：</span>{{ item.action }}
+                    </div>
+                  </div>
+                  <button class="btn-secondary btn-sm">更換書籍（敬請期待）</button>
+                </div>
+              </div>
+
+              <!-- News Page -->
+              <div v-if="currentPage === 'news'">
+                <div class="card">
+                  <div class="section-title"><span>📰</span> 今日財經頭條</div>
+                  <div v-for="(n, i) in todayNews" :key="i" class="border-b border-gray-100 pb-5 mb-5 last:border-b-0 last:pb-0 last:mb-0">
+                    <div class="font-semibold text-gray-800 mb-1">{{ n.title }}</div>
+                    <div class="text-sm text-gray-500 mb-3">{{ n.summary }}</div>
+                    <div class="insight-box mb-2"><span class="font-semibold">💡 對你的啟發：</span>{{ n.insight }}</div>
+                    <div class="flow-box"><span class="font-semibold">💰 資金流向：</span>{{ n.flow }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fitness Page -->
+              <div v-if="currentPage === 'fitness'">
+                <div class="flex items-center justify-between mb-6">
+                  <div class="section-title" style="margin-bottom:0;"><span>💪</span> 今日飲食菜單</div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm" :class="fitnessMode === 'bulk' ? 'font-bold text-orange-500' : 'text-gray-400'">增肌</span>
+                    <div :class="['toggle-switch', { active: fitnessMode === 'cut' }]" @click="toggleFitnessMode"></div>
+                    <span class="text-sm" :class="fitnessMode === 'cut' ? 'font-bold text-blue-500' : 'text-gray-400'">減脂</span>
+                  </div>
+                </div>
+                <div class="card mb-6">
+                  <div class="grid grid-cols-4 gap-3 mb-3 text-xs text-gray-500 font-semibold">
+                    <div>餐別</div><div>內容</div><div>蛋白質</div><div>碳水 / 脂肪</div>
+                  </div>
+                  <div v-for="(meal, i) in todayMeal" :key="i" class="meal-card mb-3">
+                    <div class="grid grid-cols-4 gap-3 items-center text-sm">
+                      <div class="font-semibold text-gray-700">{{ meal.meal }}</div>
+                      <div class="text-gray-600">{{ meal.content }}</div>
+                      <div class="text-blue-600 font-semibold">{{ meal.protein }}g</div>
+                      <div class="text-gray-500">{{ meal.carbs }}g / {{ meal.fat }}g</div>
+                    </div>
+                  </div>
+                  <div class="flex justify-between items-center mt-4 pt-3 border-t">
+                    <span class="text-sm text-gray-500">總熱量：<span class="font-bold text-gray-700">{{ totalCalories }} kcal</span></span>
+                    <button @click="toggleMealDone" :class="mealDone ? 'btn-secondary btn-sm' : 'btn-primary btn-sm'">
+                      {{ mealDone ? '✅ 已完成今日飲食' : '☐ 標記完成' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Anti-inflammatory Page -->
+              <div v-if="currentPage === 'skincare'">
+                <div class="card mb-6">
+                  <div class="section-title"><span>🧴</span> 今日保養 SOP · 薇諾娜</div>
+                  <div class="flex items-center gap-4 mb-4">
+                    <div class="day-streak">🔥 連續保養 {{ skincareStreak }} 天</div>
+                    <button @click="markSkincareDone('morning')" :class="skincareDone.morning ? 'btn-secondary btn-sm' : 'btn-primary btn-sm'">
+                      {{ skincareDone.morning ? '✅' : '☐' }} 早上完成
+                    </button>
+                    <button @click="markSkincareDone('evening')" :class="skincareDone.evening ? 'btn-secondary btn-sm' : 'btn-primary btn-sm'">
+                      {{ skincareDone.evening ? '✅' : '☐' }} 晚上完成
+                    </button>
+                  </div>
+
+                  <div class="font-semibold text-gray-700 mb-3">🌅 早上</div>
+                  <div v-for="(step, i) in morningSOP" :key="'m'+i" class="sop-card">
+                    <div class="flex gap-3">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style="background:#E67E22;">{{ i+1 }}</div>
+                      <div>
+                        <div class="font-semibold text-gray-700">{{ step.title }}</div>
+                        <div class="text-sm text-gray-500 mt-1">{{ step.action }}</div>
+                        <div class="text-xs text-orange-500 mt-1">{{ step.note }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="font-semibold text-gray-700 mb-3 mt-6">🌙 晚上</div>
+                  <div v-for="(step, i) in eveningSOP" :key="'e'+i" class="sop-card">
+                    <div class="flex gap-3">
+                      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style="background:#2E86C1;">{{ i+1 }}</div>
+                      <div>
+                        <div class="font-semibold text-gray-700">{{ step.title }}</div>
+                        <div class="text-sm text-gray-500 mt-1">{{ step.action }}</div>
+                        <div class="text-xs text-blue-500 mt-1">{{ step.note }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sunday Check -->
+                <div class="card mb-6" v-if="isSunday">
+                  <div class="section-title"><span>🔍</span> 每週清潔深度檢視</div>
+                  <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <div :class="['checkbox-custom', { checked: weeklyCheck.q1 }]" @click="weeklyCheck.q1 = !weeklyCheck.q1; saveWeeklyCheck()"></div>
+                      <span class="text-sm">本週毛孔是否更乾淨？</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                      <div :class="['checkbox-custom', { checked: weeklyCheck.q2 }]" @click="weeklyCheck.q2 = !weeklyCheck.q2; saveWeeklyCheck()"></div>
+                      <span class="text-sm">T 字出油是否減少？</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Product Suggestions -->
+                <div class="card">
+                  <div class="section-title"><span>🔄</span> 產品替換建議</div>
+                  <div class="text-sm text-gray-600 space-y-2">
+                    <div>• 若特護霜夏天悶 → 可試 <span class="font-semibold">Cerave 保濕乳</span>（清爽型）</div>
+                    <div>• 若壬二酸刺激 → 可改 <span class="font-semibold">達芙文（A 酸）凝膠</span>（需建立耐受）</div>
+                  </div>
+                  <button class="btn-secondary btn-sm mt-3">自訂產品（敬請期待）</button>
+                </div>
+              </div>
+
+              <!-- English Learning Page -->
+              <div v-if="currentPage === 'english'">
+                <div class="card mb-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="section-title" style="margin-bottom:0;"><span>🇬🇧</span> 零基礎英文 · Peppa Pig</div>
+                    <div class="day-streak">📅 第 {{ englishDay }} 天</div>
+                  </div>
+
+                  <!-- Badges -->
+                  <div class="flex gap-3 mb-4" v-if="englishStreak >= 7">
+                    <span class="badge badge-bronze" v-if="englishStreak >= 7">🥉 7天達標</span>
+                    <span class="badge badge-silver" v-if="englishStreak >= 14">🥈 14天達標</span>
+                    <span class="badge badge-gold" v-if="englishStreak >= 30">🥇 30天達標</span>
+                  </div>
+
+                  <!-- Dialogue -->
+                  <div class="bg-yellow-50 rounded-xl p-5 mb-5">
+                    <div class="font-bold text-gray-800 mb-2">今日台詞：</div>
+                    <div class="text-lg text-gray-700 italic mb-2">"{{ englishData[englishDay-1]?.dialogue }}"</div>
+                    <div class="text-sm text-gray-500">{{ englishData[englishDay-1]?.chinese }}</div>
+                  </div>
+
+                  <!-- Speaking Practice -->
+                  <div class="mb-5">
+                    <div class="font-bold text-gray-700 mb-3">🗣️ 今日必練口說句</div>
+                    <div v-for="(s, i) in englishData[englishDay-1]?.speaking || []" :key="'s'+i" class="bg-blue-50 rounded-lg p-3 mb-2 text-sm">
+                      <span class="font-bold text-blue-700">{{ s }}</span>
+                      <span class="text-gray-400 ml-2">（慢速跟讀 ×3）</span>
+                    </div>
+                  </div>
+
+                  <!-- Fill in the blanks -->
+                  <div class="mb-5">
+                    <div class="font-bold text-gray-700 mb-3">✏️ 聽力填空練習</div>
+                    <div class="bg-gray-50 rounded-xl p-4 text-lg text-center">
+                      <span v-for="(part, i) in englishData[englishDay-1]?.fillParts || []" :key="'f'+i">
+                        <span v-if="part.type === 'text'">{{ part.value }}</span>
+                        <span v-else
+                              :class="['fill-blank', { revealed: part.revealed }]"
+                              @click="part.revealed = !part.revealed">
+                          {{ part.revealed ? part.answer : '???' }}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Practice Minutes -->
+                  <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-600">今日練習分鐘數：</span>
+                    <input type="number" v-model="englishMinutes" class="input-field" style="width:80px;" min="0">
+                    <button @click="saveEnglishMinutes" class="btn-primary btn-sm">記錄</button>
+                    <span class="text-sm text-gray-400 ml-2">累積總時數：{{ Math.floor(totalEnglishMinutes / 60) }} 小時 {{ totalEnglishMinutes % 60 }} 分鐘</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quality Media Page -->
+              <div v-if="currentPage === 'media'">
+                <div class="card">
+                  <div class="section-title"><span>🎬</span> 每日熱門影片</div>
+                  <div class="flex gap-2 mb-5">
+                    <button v-for="f in mediaFilters" :key="f.key"
+                            :class="['filter-btn', { active: mediaFilter === f.key }]"
+                            @click="mediaFilter = f.key">{{ f.label }}</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div v-for="(v, i) in filteredMedia" :key="i" class="media-card">
+                      <div class="h-32 bg-gray-100 flex items-center justify-center text-gray-300 text-4xl">🎬</div>
+                      <div class="p-4">
+                        <div class="text-sm font-semibold text-gray-700 line-clamp-2 mb-2">{{ v.title }}</div>
+                        <div class="flex items-center gap-2 mb-3">
+                          <span :class="['tag', 'tag-'+v.platform]">{{ v.platformLabel }}</span>
+                          <span class="text-xs text-gray-400">{{ v.views }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                          <button @click="markMedia(i, 'watched')" :class="v.status === 'watched' || v.status === 'good' || v.status === 'bad' ? 'btn-secondary btn-sm' : 'btn-primary btn-sm'" style="font-size:12px;">
+                            {{ v.status === 'watched' || v.status === 'good' || v.status === 'bad' ? '✅ 已看' : '☐ 標記已看' }}
+                          </button>
+                          <button v-if="v.status === 'watched' || v.status === 'good' || v.status === 'bad'" @click="markMedia(i, 'good')" :class="v.status === 'good' ? 'btn-primary btn-sm' : 'btn-secondary btn-sm'" style="font-size:12px; padding:6px 10px;">
+                            {{ v.status === 'good' ? '⭐' : '☆' }} 有收穫
+                          </button>
+                          <button v-if="v.status === 'watched' || v.status === 'good' || v.status === 'bad'" @click="markMedia(i, 'bad')" :class="v.status === 'bad' ? 'btn-danger btn-sm' : 'btn-secondary btn-sm'" style="font-size:12px; padding:6px 10px;">
+                            {{ v.status === 'bad' ? '👎' : '👎' }} 普通
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Footer -->
+          <div class="mt-8 pt-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-400">
+            <div>📅 {{ todayDate }} · WorkBuddy 工作台</div>
+            <div>已完成事項：{{ completedCount }} 項</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+  const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+
+  createApp({
+    setup() {
+      const currentPage = ref('home');
+      const todayDate = ref(dayjs().format('YYYY 年 MM 月 DD 日 (dddd)'));
+      const currentSubtitle = ref('');
+
+      // Subtitle rotation
+      const subtitles = [
+        '「今天你選擇行動，明天你就離目標更近一步。」',
+        '「專注當下，就是最好的自律。」',
+        '「不怕慢，只怕站。」',
+        '「每一個小習慣，都在塑造未來的你。」',
+        '「行動是治癒焦慮的唯一解藥。」'
+      ];
+
+      // Navigation
+      const navItems = [
+        { id: 'home', icon: '🏠', label: '首頁' },
+        { id: 'about', icon: '👤', label: '關於我' },
+        { id: 'accounting', icon: '💰', label: '生活記帳' },
+        { id: 'finance', icon: '📊', label: '學習理財' },
+        { id: 'reading', icon: '📖', label: '閱讀學習' },
+        { id: 'news', icon: '📰', label: '新聞熱點' },
+        { id: 'fitness', icon: '💪', label: '健身增肌' },
+        { id: 'skincare', icon: '🧴', label: '抗炎管理' },
+        { id: 'english', icon: '🇬🇧', label: '學習英文' },
+        { id: 'media', icon: '🎬', label: '優質自媒體' }
+      ];
+
+      // ===== HOME PAGE =====
+      const quotes = [
+        { name: '愛因斯坦', era: '20世紀', quote: '凡事力求簡單，直到不能再簡。', avatar: '愛' },
+        { name: '賈伯斯', era: '20-21世紀', quote: '你的時間有限，不要浪費在別人的生活裡。', avatar: '賈' },
+        { name: '馬雲', era: '當代', quote: '今天很殘酷，明天更殘酷，後天很美好。', avatar: '馬' },
+        { name: '林肯', era: '19世紀', quote: '預測未來最好的方法，就是創造未來。', avatar: '林' },
+        { name: '孔子', era: '春秋', quote: '知之為知之，不知為不知，是知也。', avatar: '孔' },
+        { name: '孫子', era: '春秋', quote: '知己知彼，百戰不殆。', avatar: '孫' },
+        { name: '巴菲特', era: '當代', quote: '別人貪婪時我恐懼，別人恐懼時我貪婪。', avatar: '巴' },
+        { name: '甘地', era: '20世紀', quote: '你必須成為你想在世界上看到的改變。', avatar: '甘' },
+        { name: '邱吉爾', era: '20世紀', quote: '成功不是終點，失敗也不是末日，最重要的是繼續前進的勇氣。', avatar: '邱' },
+        { name: '稻盛和夫', era: '當代', quote: '人生的目的在於努力提升心性、磨練靈魂。', avatar: '稻' },
+        { name: '達爾文', era: '19世紀', quote: '能生存下來的不是最強的物種，而是最能適應變化的。', avatar: '達' },
+        { name: '特斯拉', era: '19-20世紀', quote: '不要讓別人的意見淹沒你內心的聲音。', avatar: '特' },
+        { name: '王陽明', era: '明代', quote: '知行合一，知而不行，只是未知。', avatar: '王' },
+        { name: '蘇格拉底', era: '古希臘', quote: '未經審視的人生不值得過。', avatar: '蘇' },
+        { name: '曾國藩', era: '清代', quote: '天下古今之庸人，皆以一惰字致敗。', avatar: '曾' },
+        { name: '曼德拉', era: '20-21世紀', quote: '在事情未成功之前，一切總看似不可能。', avatar: '曼' },
+        { name: '馬克吐溫', era: '19世紀', quote: '二十年後，你會更後悔那些沒做過的事，而不是做過的事。', avatar: '吐' },
+        { name: '李小龍', era: '20世紀', quote: '我不怕練過一萬種踢法的人，我怕一種踢法練過一萬次的人。', avatar: '李' },
+        { name: '富蘭克林', era: '18世紀', quote: '投資知識，收益最高。', avatar: '富' },
+        { name: '亞里斯多德', era: '古希臘', quote: '我們反覆做的事造就了我們。卓越不是一種行為，而是一種習慣。', avatar: '亞' },
+        { name: '村上春樹', era: '當代', quote: '痛楚難以避免，而磨難可以選擇。', avatar: '村' },
+        { name: '張忠謀', era: '當代', quote: '終身學習是保持競爭力的唯一方法。', avatar: '張' },
+        { name: '歐普拉', era: '當代', quote: '你相信什麼，你就成為什麼。', avatar: '歐' },
+        { name: '愛迪生', era: '19-20世紀', quote: '我沒有失敗，我只是找到了一萬種行不通的方法。', avatar: '愛' },
+        { name: '老子', era: '春秋', quote: '千里之行，始於足下。', avatar: '老' },
+        { name: '賈伯斯', era: '20-21世紀', quote: '保持飢餓，保持愚蠢。', avatar: '賈' },
+        { name: '洛克菲勒', era: '19-20世紀', quote: '不要害怕放棄好的，去追求更好的。', avatar: '洛' },
+        { name: '海倫凱勒', era: '20世紀', quote: '生命不是等待暴風雨過去，而是學會在雨中跳舞。', avatar: '海' },
+        { name: '拿破崙', era: '18-19世紀', quote: '不可能這個詞，只存在於愚人的字典裡。', avatar: '拿' },
+        { name: '司馬遷', era: '西漢', quote: '人固有一死，或重於泰山，或輕於鴻毛。', avatar: '司' }
+      ];
+
+      const inspiredCount = ref(Math.floor(Math.random() * 5000) + 1000);
+      const todayQuote = ref(quotes[0]);
+
+      // ===== ABOUT PAGE =====
+      const events = ref(loadJSON('wb_events', []));
+      const newEvent = ref({ date: dayjs().format('YYYY-MM-DD'), title: '', note: '' });
+      const editingEventId = ref(null);
+      const editEvent = ref({});
+      const todayMood = ref(loadJSON('wb_todayMood', ''));
+      const moodDiary = ref(loadJSON('wb_moodDiary', ''));
+      const moodHistory = ref(loadJSON('wb_moodHistory', {}));
+
+      const moods = [
+        { emoji: '😊', label: '開心' },
+        { emoji: '😐', label: '普通' },
+        { emoji: '😢', label: '難過' },
+        { emoji: '😡', label: '生氣' }
+      ];
+
+      const sortedEvents = computed(() => [...events.value].sort((a,b) => b.date.localeCompare(a.date)));
+      const monthlyEventCount = computed(() => {
+        const m = dayjs().format('YYYY-MM');
+        return events.value.filter(e => e.date.startsWith(m)).length;
+      });
+
+      const weeklyMoodData = computed(() => {
+        const today = dayjs();
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = today.subtract(i, 'day').format('YYYY-MM-DD');
+          days.push({ date: d, mood: moodHistory.value[d] || null });
+        }
+        return days;
+      });
+
+      const weeklyMoodRatio = computed(() => {
+        const weekMoods = weeklyMoodData.value.filter(d => d.mood);
+        if (weekMoods.length === 0) return 0;
+        const happy = weekMoods.filter(d => d.mood === '😊').length;
+        return Math.round(happy / weekMoods.length * 100);
+      });
+
+      function addEvent() {
+        if (!newEvent.value.title.trim()) return;
+        events.value.push({ ...newEvent.value });
+        newEvent.value = { date: dayjs().format('YYYY-MM-DD'), title: '', note: '' };
+        saveJSON('wb_events', events.value);
+      }
+      function startEditEvent(i, ev) {
+        editingEventId.value = i;
+        editEvent.value = { ...ev };
+      }
+      function saveEditEvent(i) {
+        events.value[i] = { ...editEvent.value };
+        editingEventId.value = null;
+        saveJSON('wb_events', events.value);
+      }
+      function deleteEvent(i) {
+        events.value.splice(i, 1);
+        saveJSON('wb_events', events.value);
+      }
+      function setMood(emoji) {
+        todayMood.value = emoji;
+      }
+      function saveMood() {
+        const d = dayjs().format('YYYY-MM-DD');
+        moodHistory.value[d] = todayMood.value;
+        saveJSON('wb_todayMood', todayMood.value);
+        saveJSON('wb_moodDiary', moodDiary.value);
+        saveJSON('wb_moodHistory', moodHistory.value);
+        drawMoodChart();
+      }
+
+      // ===== ACCOUNTING PAGE =====
+      const records = ref(loadJSON('wb_records', []));
+      const newRecord = ref({ date: dayjs().format('YYYY-MM-DD'), category: 'expense', item: '', amount: '', note: '' });
+
+      const sortedRecords = computed(() => [...records.value].sort((a,b) => b.date.localeCompare(a.date)));
+      const thisMonth = computed(() => dayjs().format('YYYY-MM'));
+      const totalIncome = computed(() => records.value.filter(r => r.category === 'income' && r.date.startsWith(thisMonth.value)).reduce((s,r) => s + Number(r.amount), 0));
+      const totalExpense = computed(() => records.value.filter(r => r.category === 'expense' && r.date.startsWith(thisMonth.value)).reduce((s,r) => s + Number(r.amount), 0));
+      const balance = computed(() => totalIncome.value - totalExpense.value);
+
+      function addRecord() {
+        if (!newRecord.value.item.trim()) {
+          alert('請輸入項目名稱');
+          return;
+        }
+        if (!newRecord.value.amount || Number(newRecord.value.amount) <= 0) {
+          alert('請輸入正確的金額');
+          return;
+        }
+        records.value.push({ ...newRecord.value, amount: Number(newRecord.value.amount) });
+        newRecord.value = { date: dayjs().format('YYYY-MM-DD'), category: 'expense', item: '', amount: '', note: '' };
+        saveJSON('wb_records', records.value);
+        nextTick(() => { drawTrendChart(); drawPieChart(); });
+      }
+      function deleteRecord(i) {
+        records.value.splice(i, 1);
+        saveJSON('wb_records', records.value);
+        nextTick(() => { drawTrendChart(); drawPieChart(); });
+      }
+
+      function formatNum(n) { return Number(n).toLocaleString(); }
+
+      // ===== FINANCE PAGE =====
+      const financeDay = computed(() => {
+        const start = loadJSON('wb_financeStart', '');
+        const stored = loadJSON('wb_financeDay', 1);
+        const today = dayjs().format('YYYY-MM-DD');
+        if (!start) {
+          saveJSON('wb_financeStart', today);
+          return 1;
+        }
+        if (start !== today) {
+          const newDay = Math.min(stored + 1, 30);
+          saveJSON('wb_financeDay', newDay);
+          saveJSON('wb_financeStart', today);
+          return newDay;
+        }
+        return stored;
+      });
+
+      const financeData = [
+        { title: 'Day 1：複利效應', content: '每天省下一杯 50 元的咖啡，一個月就是 1,500 元。把這筆錢投入年報酬率 7% 的投資，30 年後會變成約 183 萬元。這就是複利的力量——錢滾錢，時間越長效果越驚人。小錢累積，也能變大錢。' },
+        { title: 'Day 2：ETF vs 股票', content: 'ETF 像是一個水果籃，裡面裝了很多種水果（股票），買一籃就分散風險。單買股票像只買一顆蘋果，好壞全靠這顆。對新手來說，ETF 是更穩健的入門選擇，例如 0050 就包含台灣前 50 大公司。' },
+        { title: 'Day 3：通膨對存款的影響', content: '假設通膨率每年 3%，你把 100 萬放在銀行（利率 1%），10 年後名目上有 110 萬，但實際購買力只剩約 75 萬。錢放著不動，其實一直在縮水。這就是為什麼要學會投資。' },
+        { title: 'Day 4：緊急預備金', content: '至少要存 3～6 個月的生活費當作緊急預備金。這筆錢放高利活存，隨時可動用。為什麼？萬一失業、生病、車壞掉，你不會被逼著去借高利貸或賤賣股票。先存預備金，再談投資。' },
+        { title: 'Day 5：資產 vs 負債', content: '房子自住是負債（每月要繳房貸、稅金、修繕），出租才是資產（每月幫你賺錢）。車子一落地就貶值，也是負債。富人買資產，窮人買負債卻以為是資產。下次花錢前，問自己：這東西會幫我賺錢嗎？' },
+        { title: 'Day 6：72 法則', content: '想知道本金多久翻倍？用 72 除以年報酬率。例如報酬率 6%，72÷6=12 年翻倍；報酬率 8%，72÷8=9 年翻倍。這是一個快速心算法則，幫助你理解不同報酬率的長期差異。' },
+        { title: 'Day 7：分散風險', content: '雞蛋不要放在同一個籃子裡。不要把所有的錢都投在一支股票或一個國家。透過 ETF、不同產業、甚至不同國家的資產配置，可以有效降低單一事件對你財富的衝擊。' },
+        { title: 'Day 8：收入三帳戶法', content: '把每月收入分成三個帳戶：50% 必要支出（房租、伙食）、30% 自由消費（娛樂、購物）、20% 儲蓄投資。先存後花，而不是花剩再存。這個簡單比例能幫你穩定累積財富。' },
+        { title: 'Day 9：什麼是股票', content: '買股票就是成為一家公司的股東。公司賺錢，你可能分到股利；公司成長，股價上漲你也能賺價差。但股價也會跌——投資前要了解公司做什麼、賺不賺錢。' },
+        { title: 'Day 10：定期定額', content: '每個月固定金額買入，不管價格高低。價格高時買少一點，價格低時買多一點，長期下來平均成本會落在中間。這就是「懶人投資法」，適合不想盯盤的小白。' }
+      ];
+
+      // Fill remaining finance days
+      for (let i = 11; i <= 30; i++) {
+        financeData.push({
+          title: `Day ${i}：理財小知識`,
+          content: `第 ${i} 天的理財知識點（敬請期待完整內容）。記住：每天學一點，30 天後你會發現自己對金錢的理解完全不同。理財不是有錢人的專利，而是每個人都該具備的生活技能。`
+        });
+      }
+
+      // ===== READING PAGE =====
+      const readingDay = computed(() => {
+        const start = loadJSON('wb_readingStart', '');
+        const stored = loadJSON('wb_readingDay', 1);
+        const today = dayjs().format('YYYY-MM-DD');
+        if (!start) { saveJSON('wb_readingStart', today); return 1; }
+        if (start !== today) {
+          const newDay = Math.min(stored + 1, 30);
+          saveJSON('wb_readingDay', newDay);
+          saveJSON('wb_readingStart', today);
+          return newDay;
+        }
+        return stored;
+      });
+
+      const readingData = [
+        { concept: '系統 1 vs 系統 2', definition: '直覺 vs 思考', example: '2+2=4 是系統 1（自動反射）；17×24 是系統 2（需要動腦計算）。我們生活中大部分時間都在用系統 1，它快速但容易出錯。', action: '今天觀察自己何時用系統 1 做決定，何時啟動系統 2。' },
+        { concept: '捷徑思維', definition: '直覺常偷懶，容易出錯', example: '看到「醫生」就覺得是男性，這是大腦的刻板印象捷徑。雖然省力，但常導致誤判。面試官也容易因第一印象而忽略求職者的真實能力。', action: '今天遇到一個人或一件事時，暫停 3 秒再下判斷。' },
+        { concept: '損失厭惡', definition: '失去的痛苦 > 獲得的快樂', example: '撿到 100 元開心一下，丟掉 100 元記恨整天。研究顯示，損失帶來的痛苦大約是同等收益快樂的 2 倍。這解釋了為什麼我們在投資時常過早賣出賺錢的股票。', action: '回想最近一次因害怕損失而做的決定，當時真的會損失那麼多嗎？' },
+        { concept: '錨定效應', definition: '被第一印象綁架', example: '原價 5,000 元打 5 折變 2,500 元，你覺得超值，但可能它本來就只值 2,000 元。第一個數字像「錨」一樣定住你的判斷。房仲也常用這招：先帶你看貴的房子。', action: '今天購物或看價格時，問自己：如果沒有原價參考，我覺得這個東西值多少？' },
+        { concept: '過度自信', definition: '人常高估自己判斷力', example: '90% 的駕駛認為自己技術高於平均——數學上不可能。創業者也常高估成功率。過度自信讓我們做出冒險的決定而不自知。', action: '做決定前問自己：「如果我是錯的，最可能的理由是什麼？」' },
+        { concept: '框架效應', definition: '說法不同決定不同', example: '「存活率 90%」和「死亡率 10%」是同一件事，但前者讓人更願意接受手術。包裝方式改變你的感受和決定，即使事實完全一樣。', action: '今天注意廣告或新聞怎麼「包裝」同一件事的不同面向。' },
+        { concept: '記憶自我 vs 體驗自我', definition: '結局決定整體記憶', example: '假期最後一天腸胃炎，整趟回憶變差，即使前幾天都很快樂。大腦不是錄影機，而是編輯器——結局和高峰時刻決定了你如何記住一件事。', action: '今天做一件事時，刻意創造一個好的結尾，看看回憶是否不同。' }
+      ];
+
+      // Fill remaining reading days
+      for (let i = 8; i <= 30; i++) {
+        readingData.push({
+          concept: `Day ${i}：《思考，快與慢》核心概念`,
+          definition: '敬請期待',
+          example: `第 ${i} 天的閱讀重點（敬請期待完整內容）。每天讀一點，30 天後你將掌握行為經濟學的核心思想。`,
+          action: '今天試著用書中學到的概念觀察自己的決策。'
+        });
+      }
+
+      const todayReadingPoints = computed(() => {
+        const idx = readingDay.value - 1;
+        // Show 3 points per day
+        const points = [];
+        for (let i = 0; i < 3; i++) {
+          const dataIdx = (idx * 3 + i) % readingData.length;
+          points.push(readingData[dataIdx]);
+        }
+        return points;
+      });
+
+      // ===== NEWS PAGE =====
+      const newsData = [
+        { title: 'Fed 維持利率不變，市場解讀年底前降息機率升高', summary: '聯準會宣布利率維持在 5.25%-5.5%，主席鮑爾暗示通膨持續降溫。', insight: '利率可能見頂，債券價格有上漲空間，現在是布局投資級債券的好時機。', flow: '資金可能從貨幣市場基金流向長天期債券和成長型股票。' },
+        { title: 'AI 晶片需求持續爆發，NVIDIA 營收再創新高', summary: 'NVIDIA 資料中心業務年增 200%，AI 伺服器供應鏈全面受惠。', insight: 'AI 產業鏈仍是未來 3-5 年核心趨勢，但股價已高，建議定期定額分散風險。', flow: '資金集中流向半導體、散熱、電源等 AI 伺服器供應鏈。' },
+        { title: '日圓貶破 160，日本央行干預市場可能性升高', summary: '日圓兌美元創 38 年新低，市場關注日本央行是否再次出手。', insight: '日圓便宜，若近期有日本旅遊計畫可分批換匯；但投資日股需注意匯率風險。', flow: '避險資金可能流入黃金和瑞士法郎，日股出口類股受惠。' },
+        { title: '台積電法說會釋利多，3奈米產能滿載至明年', summary: '台積電預估全年營收成長 20% 以上，先進製程需求強勁。', insight: '台積電仍是全球半導體核心，長期持有者不必過度在意短期波動。', flow: '資金持續流入台積電及其設備供應鏈，如 ASML、應用材料。' },
+        { title: '中國房市刺激政策加碼，一線城市限購鬆綁', summary: '北上廣深相繼放寬購房限制，房市成交量出現短暫回升。', insight: '中國房市仍在築底階段，短期反彈不代表趨勢反轉，投資需謹慎。', flow: '部分資金可能回流中國地產股和原物料，但持續性待觀察。' },
+        { title: '比特幣 ETF 資金持續淨流入，加密貨幣市場回暖', summary: '比特幣現貨 ETF 連續 15 天淨流入，總規模突破 600 億美元。', insight: '機構資金正加速進入加密貨幣市場，但波動劇烈，配置不超過總資產 5%。', flow: '資金從傳統避險資產部分轉向比特幣，帶動以太幣等主流幣種。' },
+        { title: '台灣出口連七紅，AI 伺服器貢獻最大', summary: '台灣 5 月出口年增 3.5%，AI 相關產品出口占比持續提升。', insight: '台灣經濟結構正在轉型，AI 供應鏈已成為核心成長動力。', flow: '資金流入台灣科技股，外資持續加碼台股。' },
+        { title: '電動車價格戰白熱化，特斯拉市佔率下滑', summary: '比亞迪和小米推出低價車型，特斯拉全球市佔率跌破 15%。', insight: '電動車產業競爭加劇，整車廠利潤被壓縮，但電池和充電樁供應鏈仍受惠。', flow: '資金從整車廠流向電池材料和充電基礎設施相關股票。' },
+        { title: '印度股市市值突破 5 兆美元，超越香港', summary: '印度成為全球第四大股市，經濟成長和人口紅利吸引外資。', insight: '印度是下一個中國故事，長期投資者可透過印度 ETF 參與成長。', flow: '全球資金從中國轉向印度，印度基礎建設和消費類股受青睞。' },
+        { title: '美債殖利率曲線倒掛收斂，經濟衰退機率降低', summary: '2 年期與 10 年期美債利差縮小至 -0.3%，市場對經濟軟著陸更有信心。', insight: '經濟軟著陸情境下，股票和債券都有機會，股債平衡配置最穩健。', flow: '資金可能從防禦型類股輪動至週期型和成長型類股。' }
+      ];
+
+      const todayNews = computed(() => {
+        const idx = loadJSON('wb_newsIndex', 0);
+        const result = [];
+        for (let i = 0; i < 5; i++) {
+          result.push(newsData[(idx + i) % newsData.length]);
+        }
+        // Update daily
+        const today = dayjs().format('YYYY-MM-DD');
+        if (loadJSON('wb_newsDate', '') !== today) {
+          saveJSON('wb_newsDate', today);
+          saveJSON('wb_newsIndex', (idx + 5) % newsData.length);
+        }
+        return result;
+      });
+
+      // ===== FITNESS PAGE =====
+      const fitnessMode = ref(loadJSON('wb_fitnessMode', 'bulk'));
+      const mealDone = ref(false);
+
+      const bulkMeals = [
+        { meal: '早餐', content: '雞胸肉三明治＋無糖豆漿', protein: 30, carbs: 35, fat: 8 },
+        { meal: '午餐', content: '糙米飯＋烤鯖魚＋燙青菜', protein: 35, carbs: 50, fat: 15 },
+        { meal: '晚餐', content: '牛排＋地瓜＋花椰菜', protein: 40, carbs: 40, fat: 18 },
+        { meal: '點心', content: '希臘優格＋堅果', protein: 15, carbs: 10, fat: 12 }
+      ];
+
+      const cutMeals = [
+        { meal: '早餐', content: '水煮蛋×2＋黑咖啡＋全麥吐司', protein: 24, carbs: 20, fat: 10 },
+        { meal: '午餐', content: '雞胸肉沙拉＋藜麥＋橄欖油', protein: 35, carbs: 30, fat: 12 },
+        { meal: '晚餐', content: '清蒸魚＋大量蔬菜＋半碗糙米', protein: 30, carbs: 25, fat: 8 },
+        { meal: '點心', content: '無糖希臘優格＋藍莓', protein: 12, carbs: 8, fat: 3 }
+      ];
+
+      const todayMeal = computed(() => fitnessMode.value === 'bulk' ? bulkMeals : cutMeals);
+      const totalCalories = computed(() => {
+        const meals = todayMeal.value;
+        return meals.reduce((s, m) => s + m.protein * 4 + m.carbs * 4 + m.fat * 9, 0);
+      });
+
+      function toggleFitnessMode() {
+        fitnessMode.value = fitnessMode.value === 'bulk' ? 'cut' : 'bulk';
+        saveJSON('wb_fitnessMode', fitnessMode.value);
+      }
+
+      function toggleMealDone() {
+        mealDone.value = !mealDone.value;
+        const today = dayjs().format('YYYY-MM-DD');
+        const done = loadJSON('wb_mealDone', {});
+        done[today] = mealDone.value;
+        saveJSON('wb_mealDone', done);
+      }
+
+      // ===== SKINCARE PAGE =====
+      const skincareStreak = ref(loadJSON('wb_skincareStreak', 0));
+      const skincareDone = ref({ morning: false, evening: false });
+      const weeklyCheck = ref({ q1: false, q2: false });
+      const isSunday = computed(() => dayjs().day() === 0);
+
+      const morningSOP = [
+        { title: '清潔', action: '清水（溫涼水）潑洗 20 下', note: '不用洗面乳，避免過度脫脂' },
+        { title: '保濕', action: '薇諾娜特護霜（薄擦，一顆黃豆量）', note: '全臉帶過，T 字再減量' },
+        { title: '防曬', action: '薇諾娜清透防曬乳（SPF 30+，PA+++）', note: '室內可省略，戶外必擦' }
+      ];
+
+      const eveningSOP = [
+        { title: '卸妝／清潔', action: '溫和胺基酸潔面（薇諾娜淨痘潔面凝膠）', note: '搓泡輕按摩 30 秒，避開摩擦' },
+        { title: '保濕水', action: '薇諾娜保濕噴霧（輕拍吸收）', note: '油敏皮夏天可跳過此步' },
+        { title: '精華', action: '薇諾娜特護霜（正常量）', note: '修復屏障核心步驟' },
+        { title: '局部治療', action: '壬二酸（15% 凝膠）點塗紅腫／粉刺處', note: '只塗局部，不超過 3 個點，避開脫皮區' },
+        { title: '鎖水（可選）', action: '若覺乾，薄擦 B5 修復霜（僅局部）', note: '不建議全臉厚敷' }
+      ];
+
+      function markSkincareDone(time) {
+        skincareDone.value[time] = !skincareDone.value[time];
+        if (skincareDone.value.morning && skincareDone.value.evening) {
+          const today = dayjs().format('YYYY-MM-DD');
+          const lastDate = loadJSON('wb_skincareDate', '');
+          if (lastDate !== today) {
+            skincareStreak.value++;
+            saveJSON('wb_skincareStreak', skincareStreak.value);
+            saveJSON('wb_skincareDate', today);
+          }
+        }
+        saveJSON('wb_skincareDone', skincareDone.value);
+      }
+
+      function saveWeeklyCheck() {
+        saveJSON('wb_weeklyCheck', weeklyCheck.value);
+      }
+
+      // ===== ENGLISH PAGE =====
+      const englishDay = computed(() => {
+        const start = loadJSON('wb_englishStart', '');
+        const stored = loadJSON('wb_englishDay', 1);
+        const today = dayjs().format('YYYY-MM-DD');
+        if (!start) { saveJSON('wb_englishStart', today); return 1; }
+        if (start !== today) {
+          const newDay = Math.min(stored + 1, 30);
+          saveJSON('wb_englishDay', newDay);
+          saveJSON('wb_englishStart', today);
+          return newDay;
+        }
+        return stored;
+      });
+
+      const englishStreak = ref(loadJSON('wb_englishStreak', 0));
+      const englishMinutes = ref(60);
+      const totalEnglishMinutes = ref(loadJSON('wb_totalEnglishMinutes', 0));
+
+      const englishData = [
+        {
+          dialogue: "I'm Peppa Pig. This is my little brother, George.",
+          chinese: '我是佩佩豬。這是我的弟弟喬治。',
+          speaking: ["I'm [你的名字].", "This is my [friend / mom / dad]."],
+          fillParts: [
+            { type: 'text', value: "I'm Peppa " },
+            { type: 'blank', answer: 'Pig', revealed: false },
+            { type: 'text', value: '. This is my little ' },
+            { type: 'blank', answer: 'brother', revealed: false },
+            { type: 'text', value: ', George.' }
+          ]
+        },
+        {
+          dialogue: "Mummy Pig is making cookies. They look delicious!",
+          chinese: '媽媽豬正在做餅乾。它們看起來很好吃！',
+          speaking: ["Mummy is making [cookies / dinner].", "They look [delicious / yummy]!"],
+          fillParts: [
+            { type: 'text', value: 'Mummy Pig is making ' },
+            { type: 'blank', answer: 'cookies', revealed: false },
+            { type: 'text', value: '. They look ' },
+            { type: 'blank', answer: 'delicious', revealed: false },
+            { type: 'text', value: '!' }
+          ]
+        },
+        {
+          dialogue: "Can we go outside and play? It's a lovely day!",
+          chinese: '我們可以去外面玩嗎？今天天氣真好！',
+          speaking: ["Can we go [outside / to the park]?", "It's a [lovely / beautiful] day!"],
+          fillParts: [
+            { type: 'text', value: 'Can we go ' },
+            { type: 'blank', answer: 'outside', revealed: false },
+            { type: 'text', value: " and play? It's a " },
+            { type: 'blank', answer: 'lovely', revealed: false },
+            { type: 'text', value: ' day!' }
+          ]
+        },
+        {
+          dialogue: "George loves dinosaurs. He has a toy dinosaur.",
+          chinese: '喬治喜歡恐龍。他有一隻玩具恐龍。',
+          speaking: ["[Name] loves [hobby].", "He/She has a toy [animal]."],
+          fillParts: [
+            { type: 'text', value: 'George loves ' },
+            { type: 'blank', answer: 'dinosaurs', revealed: false },
+            { type: 'text', value: '. He has a toy ' },
+            { type: 'blank', answer: 'dinosaur', revealed: false },
+            { type: 'text', value: '.' }
+          ]
+        },
+        {
+          dialogue: "Peppa and George are jumping in muddy puddles.",
+          chinese: '佩佩和喬治正在泥坑裡跳來跳去。',
+          speaking: ["[Name] is jumping.", "They are [playing / running] in the park."],
+          fillParts: [
+            { type: 'text', value: 'Peppa and George are jumping in ' },
+            { type: 'blank', answer: 'muddy', revealed: false },
+            { type: 'text', value: ' ' },
+            { type: 'blank', answer: 'puddles', revealed: false },
+            { type: 'text', value: '.' }
+          ]
+        },
+        {
+          dialogue: "Daddy Pig says: Let's go to the playground!",
+          chinese: '爸爸豬說：我們去遊樂場吧！',
+          speaking: ["Let's go to the [playground / park / store]!", "Daddy says: [sentence]."],
+          fillParts: [
+            { type: 'text', value: "Daddy Pig says: Let's go to the " },
+            { type: 'blank', answer: 'playground', revealed: false },
+            { type: 'text', value: '!' }
+          ]
+        },
+        {
+          dialogue: "I love jumping up and down in muddy puddles!",
+          chinese: '我喜歡在泥坑裡跳上跳下！',
+          speaking: ["I love [activity]!", "I love [verb+ing] in [place]."],
+          fillParts: [
+            { type: 'text', value: 'I love jumping up and ' },
+            { type: 'blank', answer: 'down', revealed: false },
+            { type: 'text', value: ' in muddy ' },
+            { type: 'blank', answer: 'puddles', revealed: false },
+            { type: 'text', value: '!' }
+          ]
+        }
+      ];
+
+      // Fill remaining english days
+      for (let i = 8; i <= 30; i++) {
+        englishData.push({
+          dialogue: `Peppa Pig Episode ${i}: New adventure awaits!`,
+          chinese: `佩佩豬第 ${i} 集：新的冒險等著我們！`,
+          speaking: [`Practice sentence ${i}-1: Repeat after me.`, `Practice sentence ${i}-2: Say it out loud.`],
+          fillParts: [
+            { type: 'text', value: 'Listen and fill: Peppa loves to ' },
+            { type: 'blank', answer: 'play', revealed: false },
+            { type: 'text', value: ' with her ' },
+            { type: 'blank', answer: 'friends', revealed: false },
+            { type: 'text', value: '.' }
+          ]
+        });
+      }
+
+      function saveEnglishMinutes() {
+        const today = dayjs().format('YYYY-MM-DD');
+        const lastDate = loadJSON('wb_englishDate', '');
+        if (lastDate !== today && englishMinutes.value > 0) {
+          englishStreak.value = loadJSON('wb_englishStreak', 0) + 1;
+          saveJSON('wb_englishStreak', englishStreak.value);
+          saveJSON('wb_englishDate', today);
+        }
+        totalEnglishMinutes.value = loadJSON('wb_totalEnglishMinutes', 0) + Number(englishMinutes.value);
+        saveJSON('wb_totalEnglishMinutes', totalEnglishMinutes.value);
+        englishMinutes.value = 60;
+      }
+
+      // ===== MEDIA PAGE =====
+      const mediaFilter = ref('all');
+      const mediaFilters = [
+        { key: 'all', label: '全部' },
+        { key: 'watched', label: '✅ 已看' },
+        { key: 'good', label: '⭐ 有收穫' }
+      ];
+
+      const mediaData = ref(loadJSON('wb_media', [
+        { title: '如何用 AI 在 30 分鐘內建立一個網站（初學者指南）', platform: 'yt', platformLabel: 'YT', views: '12.3 萬', status: 'none' },
+        { title: '巴菲特 2024 股東會：給年輕投資者的 5 個建議', platform: 'yt', platformLabel: 'YT', views: '8.7 萬', status: 'none' },
+        { title: '【理財入門】月薪 3 萬到財務自由的 7 個步驟', platform: 'bili', platformLabel: 'B站', views: '25.1 萬', status: 'none' },
+        { title: '早起改變人生的 5 個科學方法｜個人成長', platform: 'dy', platformLabel: '抖音', views: '56.8 萬', status: 'none' },
+        { title: '2024 被動收入大全：10 種不用上班也能賺錢的方法', platform: 'xhs', platformLabel: '小紅書', views: '18.4 萬', status: 'none' },
+        { title: '健身新手必看：一週訓練計畫 + 飲食指南', platform: 'yt', platformLabel: 'YT', views: '32.1 萬', status: 'none' },
+        { title: 'AI 時代來了！哪些工作會被取代？如何自救？', platform: 'bili', platformLabel: 'B站', views: '41.2 萬', status: 'none' },
+        { title: '【經濟解析】2024 下半年投資展望：三大重點產業', platform: 'dy', platformLabel: '抖音', views: '15.6 萬', status: 'none' },
+        { title: '在家也能練！30 分鐘全身燃脂 HIIT 訓練', platform: 'ig', platformLabel: 'IG', views: '22.9 萬', status: 'none' },
+        { title: '從負債 100 萬到年收千萬：我的創業故事', platform: 'xhs', platformLabel: '小紅書', views: '67.3 萬', status: 'none' }
+      ]));
+
+      const filteredMedia = computed(() => {
+        if (mediaFilter.value === 'all') return mediaData.value;
+        if (mediaFilter.value === 'watched') return mediaData.value.filter(m => m.status === 'watched' || m.status === 'good' || m.status === 'bad');
+        if (mediaFilter.value === 'good') return mediaData.value.filter(m => m.status === 'good');
+        return mediaData.value;
+      });
+
+      function markMedia(i, status) {
+        mediaData.value[i].status = status;
+        saveJSON('wb_media', mediaData.value);
+      }
+
+      // ===== Completed Count =====
+      const completedCount = computed(() => {
+        let count = 0;
+        if (mealDone.value) count++;
+        if (skincareDone.value.morning) count++;
+        if (skincareDone.value.evening) count++;
+        if (todayMood.value) count++;
+        if (records.value.length > 0) count++;
+        return count;
+      });
+
+      // ===== HELPERS =====
+      function loadJSON(key, defaultVal) {
+        try {
+          const val = localStorage.getItem(key);
+          if (!val) return defaultVal;
+          return JSON.parse(val);
+        } catch (e) {
+          console.warn(`[WorkBuddy] loadJSON error for key "${key}":`, e);
+          // 資料損壞 → 清除並回傳預設值
+          try { localStorage.removeItem(key); } catch (_) {}
+          return defaultVal;
+        }
+      }
+      function saveJSON(key, val) {
+        try {
+          localStorage.setItem(key, JSON.stringify(val));
+        } catch (e) {
+          console.error(`[WorkBuddy] saveJSON error for key "${key}":`, e);
+          // 儲存空間已滿 → 嘗試清除舊資料
+          if (e.name === 'QuotaExceededError') {
+            cleanupOldData();
+            try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) {}
+          }
+        }
+      }
+      // 自動清理舊資料（保留最近 90 天的記錄）
+      function cleanupOldData() {
+        const cutoff = dayjs().subtract(90, 'day').format('YYYY-MM-DD');
+        const keys = Object.keys(localStorage);
+        keys.forEach(k => {
+          if (k.startsWith('wb_') && k.includes('_date_')) {
+            try {
+              const dateStr = k.split('_date_')[1];
+              if (dateStr && dateStr < cutoff) localStorage.removeItem(k);
+            } catch (_) {}
+          }
+        });
+      }
+      // 檢查 localStorage 可用性
+      function checkStorage() {
+        try {
+          const test = '__wb_test__';
+          localStorage.setItem(test, '1');
+          localStorage.removeItem(test);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      const storageAvailable = checkStorage();
+
+      function switchPage(page) {
+        currentPage.value = page;
+        nextTick(() => {
+          if (page === 'accounting') {
+            setTimeout(() => { drawTrendChart(); drawPieChart(); }, 100);
+          }
+          if (page === 'about') {
+            setTimeout(() => { drawMoodChart(); }, 100);
+          }
+        });
+      }
+
+      // Charts
+      let trendChart = null, pieChart = null, moodChart = null;
+
+      function drawTrendChart() {
+        const canvas = document.getElementById('trendChart');
+        if (!canvas) return;
+        if (trendChart) trendChart.destroy();
+        const ctx = canvas.getContext('2d');
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = dayjs().subtract(i, 'day').format('MM/DD');
+          const dateStr = dayjs().subtract(i, 'day').format('YYYY-MM-DD');
+          const total = records.value.filter(r => r.category === 'expense' && r.date === dateStr).reduce((s,r) => s + r.amount, 0);
+          days.push({ label: d, value: total });
+        }
+        trendChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: days.map(d => d.label),
+            datasets: [{
+              label: '消費金額',
+              data: days.map(d => d.value),
+              borderColor: '#E67E22',
+              backgroundColor: 'rgba(230,126,34,0.1)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointBackgroundColor: '#E67E22'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { callback: v => 'NT$' + v } }
+            }
+          }
+        });
+      }
+
+      function drawPieChart() {
+        const canvas = document.getElementById('pieChart');
+        if (!canvas) return;
+        if (pieChart) pieChart.destroy();
+        const ctx = canvas.getContext('2d');
+        const categories = { '餐飲': 0, '交通': 0, '購物': 0, '娛樂': 0, '其他': 0 };
+        const thisMonthStr = dayjs().format('YYYY-MM');
+        records.value.filter(r => r.category === 'expense' && r.date.startsWith(thisMonthStr)).forEach(r => {
+          const item = r.item;
+          if (item.includes('餐') || item.includes('食') || item.includes('飯') || item.includes('飲')) categories['餐飲'] += r.amount;
+          else if (item.includes('交通') || item.includes('車') || item.includes('油')) categories['交通'] += r.amount;
+          else if (item.includes('購物') || item.includes('買') || item.includes('衣')) categories['購物'] += r.amount;
+          else if (item.includes('娛樂') || item.includes('電影') || item.includes('遊戲')) categories['娛樂'] += r.amount;
+          else categories['其他'] += r.amount;
+        });
+        const labels = Object.keys(categories).filter(k => categories[k] > 0);
+        const data = labels.map(k => categories[k]);
+        const colors = ['#E67E22', '#2E86C1', '#43A047', '#E53935', '#8E24AA'];
+        pieChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{ data, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } } }
+          }
+        });
+      }
+
+      function drawMoodChart() {
+        const canvas = document.getElementById('moodChart');
+        if (!canvas) return;
+        if (moodChart) moodChart.destroy();
+        const ctx = canvas.getContext('2d');
+        const moodMap = { '😊': 4, '😐': 3, '😢': 2, '😡': 1 };
+        const moodColors = { '😊': '#43A047', '😐': '#FDD835', '😢': '#2E86C1', '😡': '#E53935' };
+        const data = weeklyMoodData.value;
+        moodChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.map(d => dayjs(d.date).format('MM/DD')),
+            datasets: [{
+              data: data.map(d => moodMap[d.mood] || 0),
+              backgroundColor: data.map(d => moodColors[d.mood] || '#E2E8F0'),
+              borderRadius: 6,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, max: 5, ticks: { stepSize: 1, callback: v => ['', '😡', '😢', '😐', '😊'][v] || '' } }
+            }
+          }
+        });
+      }
+
+      // ===== INIT =====
+      function initDaily() {
+        // localStorage 不可用時的降級處理
+        if (!storageAvailable) {
+          console.warn('[WorkBuddy] localStorage 不可用，資料不會被保存');
+          todayQuote.value = quotes[Math.floor(Math.random() * quotes.length)];
+          currentSubtitle.value = subtitles[Math.floor(Math.random() * subtitles.length)];
+          return;
+        }
+
+        const today = dayjs().format('YYYY-MM-DD');
+        const lastOpen = loadJSON('wb_lastOpen', '');
+
+        // 首次使用或新的一天
+        if (!lastOpen || lastOpen !== today) {
+          // 輪播語錄
+          const quoteIdx = Math.floor(Math.random() * quotes.length);
+          todayQuote.value = quotes[quoteIdx];
+          // 輪播副標
+          currentSubtitle.value = subtitles[Math.floor(Math.random() * subtitles.length)];
+          // 重置每日狀態
+          mealDone.value = false;
+          skincareDone.value = { morning: false, evening: false };
+          saveJSON('wb_skincareDone', skincareDone.value);
+          saveJSON('wb_lastOpen', today);
+          saveJSON('wb_todayQuote', todayQuote.value);
+          saveJSON('wb_todaySubtitle', currentSubtitle.value);
+        } else {
+          // 同一天重新開啟 → 載入已保存的狀態
+          const savedQuote = loadJSON('wb_todayQuote', null);
+          todayQuote.value = savedQuote || quotes[0];
+          currentSubtitle.value = loadJSON('wb_todaySubtitle', subtitles[0]);
+          mealDone.value = loadJSON('wb_mealDone', {})[today] || false;
+          skincareDone.value = loadJSON('wb_skincareDone', { morning: false, evening: false });
+          weeklyCheck.value = loadJSON('wb_weeklyCheck', { q1: false, q2: false });
+        }
+      }
+
+      onMounted(() => {
+        initDaily();
+        // 顯示 localStorage 警告（如果不可用）
+        if (!storageAvailable) {
+          setTimeout(() => {
+            alert('⚠️ 瀏覽器儲存空間不可用\n\n您的資料（記帳、事件等）不會被保存。\n建議使用 Safari 一般模式（非無痕）開啟。');
+          }, 500);
+        }
+        // Initial chart draw
+        nextTick(() => {
+          if (currentPage.value === 'accounting') {
+            setTimeout(() => { drawTrendChart(); drawPieChart(); }, 200);
+          }
+          if (currentPage.value === 'about') {
+            setTimeout(() => { drawMoodChart(); }, 200);
+          }
+        });
+      });
+
+      return {
+        currentPage, todayDate, currentSubtitle, navItems, switchPage,
+        // Home
+        todayQuote, inspiredCount,
+        // About
+        events, newEvent, editingEventId, editEvent, sortedEvents, monthlyEventCount,
+        todayMood, moodDiary, moods, weeklyMoodRatio, weeklyMoodData,
+        addEvent, startEditEvent, saveEditEvent, deleteEvent, setMood, saveMood,
+        // Accounting
+        records, newRecord, sortedRecords, totalIncome, totalExpense, balance,
+        addRecord, deleteRecord, formatNum,
+        // Finance
+        financeDay, financeData,
+        // Reading
+        readingDay, todayReadingPoints,
+        // News
+        todayNews,
+        // Fitness
+        fitnessMode, mealDone, todayMeal, totalCalories, toggleFitnessMode, toggleMealDone,
+        // Skincare
+        skincareStreak, skincareDone, morningSOP, eveningSOP, weeklyCheck, isSunday,
+        markSkincareDone, saveWeeklyCheck,
+        // English
+        englishDay, englishStreak, englishMinutes, totalEnglishMinutes, englishData,
+        saveEnglishMinutes,
+        // Media
+        mediaFilter, mediaFilters, filteredMedia, markMedia,
+        // Completed
+        completedCount
+      };
+    }
+  }).mount('#app');
+  </script>
+</body>
+</html>
